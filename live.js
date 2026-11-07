@@ -13,9 +13,11 @@
  function unlock(show){$('live-lock').hidden=!show;$('live-status').textContent=show?'LOCAL · AUTH REQUIRED':'LOCAL · AUTHENTICATED';$('live-status').classList.toggle('connected',!show);$('runtime-mode').textContent=show?'LIVE SERVICES · LOCKED':'LIVE SERVICES · LOCAL';}
  async function refresh(){
   try{
-   const [state,verification,events]=await Promise.all([api('/api/state'),api('/api/verify'),api('/api/events')]);
+   const [state,events]=await Promise.all([api('/api/state'),api('/api/events')]);
+   const verification=await api('/api/verify').catch(err=>({verified:false,error:err.message}));
    unlock(false);
-   $('live-integrity').textContent=verification.verified?'VALID':'FAILED';$('live-events').textContent=String(state.total);$('live-allowed').textContent=String(state.allowed);$('live-denied').textContent=String(state.denied);
+   $('live-integrity').textContent=verification.verified?'VALID':'FAILED';
+   if(!verification.verified)out('proof-output',verification);$('live-events').textContent=String(state.total);$('live-allowed').textContent=String(state.allowed);$('live-denied').textContent=String(state.denied);
    $('model-status').textContent=state.model_configured?'Local model endpoint configured (health unverified)':'Local model endpoint not configured';
    $('event-count').textContent=`${state.total} total events, showing ${events.events.length}`;
    const list=$('live-event-list');list.replaceChildren();

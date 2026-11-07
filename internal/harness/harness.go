@@ -122,7 +122,7 @@ func New(root, modelURL, modelID string) (*App, error) {
 	if modelID == "" {
 		modelID = "local"
 	}
-	a := &App{Root: abs, dir: data, key: k, token: hex.EncodeToString(t), sessions: make(map[string]time.Time), modelID: modelID, client: &http.Client{Timeout: 15 * time.Second}}
+	a := &App{Root: abs, dir: data, key: k, token: hex.EncodeToString(t), sessions: make(map[string]time.Time), modelID: modelID, client: &http.Client{Timeout: 15 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}}
 	if modelURL != "" {
 		u, e := url.Parse(modelURL)
 		if e != nil {
@@ -622,6 +622,9 @@ func (a *App) Handler() http.Handler {
 		}
 		http.SetCookie(w, &http.Cookie{Name: "titanu_session", Path: "/", MaxAge: -1, HttpOnly: true, SameSite: http.SameSiteStrictMode})
 		write(w, 200, map[string]any{"ok": true})
+	})
+	mux.HandleFunc("GET /api/policy", func(w http.ResponseWriter, r *http.Request) {
+		write(w, 200, map[string]any{"authority": "go", "mirror": "independent Go", "tools": []string{"read", "write", "hash", "list"}, "shell_allowed": false, "max_write_bytes": 131072, "workspace": "data/workspace", "decision": "fail closed on mismatch"})
 	})
 	mux.HandleFunc("GET /api/state", func(w http.ResponseWriter, r *http.Request) {
 		a.mu.Lock()

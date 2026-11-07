@@ -1,0 +1,5 @@
+/data/
+/bin/
+*.test
+*.out
+.DS_Store

@@ -63,6 +63,10 @@ curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
 - `.github/workflows/ci.yml`: CI checks
 - `data/`: local secrets, audit and workspace, ignored by Git
 
+## Executed verification record
+
+`proof/local-verification.json` records the real local Go race tests, vet, JavaScript syntax check, Android ARM64 cross-build, and clean-install HTTP proof (health, policy, ledger). It is dated test evidence, not a guarantee about a different host.
+
 ## Version
 
 Implementation: local runtime version **0.2.0**. Historical record: September 25, 2026 version 0.1.0, cited separately.

@@ -1,0 +1,83 @@
+{
+  "product": "TitanU Harness",
+  "version": "0.2.0",
+  "verified_at_utc": "2026-11-07T20:53:24.505694+00:00",
+  "platform": "Linux x86_64",
+  "go_version": "go version go1.23.2 linux/amd64",
+  "checks": [
+    {
+      "command": "go test -race ./... -count=1",
+      "exit_code": 0,
+      "stdout": "?   \tgithub.com/juliushill42/titanu-harness/cmd/harness\t[no test files]\nok  \tgithub.com/juliushill42/titanu-harness/internal/harness\t1.132s\n",
+      "stderr": ""
+    },
+    {
+      "command": "go vet ./...",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": "node --check live.js",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": "go build -o /tmp/titanu-proof-android-arm64 ./cmd/harness",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "fresh_install_http": {
+    "health": {
+      "status": 200,
+      "body": {
+        "mode": "local",
+        "ok": true,
+        "service": "titanu-harness"
+      }
+    },
+    "policy": {
+      "status": 200,
+      "body": {
+        "authority": "go",
+        "decision": "fail closed on mismatch",
+        "max_write_bytes": 131072,
+        "mirror": "independent Go",
+        "shell_allowed": false,
+        "tools": [
+          "read",
+          "write",
+          "hash",
+          "list"
+        ],
+        "workspace": "data/workspace"
+      }
+    },
+    "state": {
+      "status": 200,
+      "body": {
+        "allowed": 2,
+        "denied": 1,
+        "head": "7b4389280fb7ec4a24d9990e52ce7af030595c6263edfeee823df49628a60abf",
+        "model_configured": false,
+        "policy_authority": "go",
+        "proof": "HMAC-SHA256",
+        "total": 3
+      }
+    },
+    "ledger_verification": {
+      "status": 200,
+      "body": {
+        "events": 3,
+        "head": "7b4389280fb7ec4a24d9990e52ce7af030595c6263edfeee823df49628a60abf",
+        "verified": true
+      }
+    },
+    "safe_write_read_sha256": "e47bf799cc3f39d7ba11233617d5a6ad1292be2cac8052a046a4d9a68a52cbd8",
+    "blocked_command": "DANGEROUS_COMMAND"
+  },
+  "scope": "Executed local tests and fresh ZIP install; no independent device execution or model weights claimed. Browser automated navigation was restricted by test environment."
+}

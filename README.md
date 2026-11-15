@@ -32,6 +32,26 @@ TITANU_MODEL_ENDPOINT=http://127.0.0.1:8080/v1/chat/completions TITANU_MODEL_ID=
 
 No model, weights or cloud services are installed by Harness. Configure only a model process you actually run.
 
+## Harness LittleBit API
+
+Set `TITANU_LITTLEBIT_LAYER` to a TitanU-format layer artifact before starting the Harness:
+
+```bash
+TITANU_LITTLEBIT_LAYER="$HOME/models/layer.json" bash bootstrap.sh
+```
+
+The authenticated API exposes:
+- `GET /api/littlebit/status` — loaded layer metadata and storage accounting.
+- `POST /api/littlebit/apply` — apply the loaded factorized layer to a JSON float32 vector.
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8844/api/littlebit/status
+curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"input":[3,5]}' http://127.0.0.1:8844/api/littlebit/apply
+```
+
+Every successful layer application appends a signed event to the existing HMAC evidence ledger. This is a factorized-layer execution tool, not a full text-generation endpoint.
+
 ## API (all except health and login require authentication)
 
 `GET /health`, `POST /api/login`, `POST /api/logout`, `GET /api/state`, `POST /api/evaluate`, `POST /api/execute`, `GET /api/events`, `GET /api/verify`, `GET /api/replay/{id}`, `POST /api/feedback`, `GET /api/export/sft`, `GET /api/export/preferences`, `POST /api/infer`.
@@ -39,10 +59,10 @@ No model, weights or cloud services are installed by Harness. Configure only a m
 All writes require `Content-Type: application/json`. Browser requests are constrained to same-origin. CLI clients use `Authorization: Bearer <printed-64-character-token>`. Default binding is `127.0.0.1:8844`; exposing this HTTP server to an untrusted network is **not supported**. For CLI checks:
 
 ```bash
-TOKEN=$(od -An -tx1 -v data/control.token | tr -d ' \\n')
+TOKEN=$(od -An -tx1 -v data/control.token | tr -d ' \n')
 curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8844/api/verify
 curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \\
-  -d '{"tool":"write","path":"notes/hello.txt","content":"Hello"}' \\
+  -d '{"tool":"write","path":"notes/hello.txt","content":"Hello"}' \
   http://127.0.0.1:8844/api/execute
 ```
 

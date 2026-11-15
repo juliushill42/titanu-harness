@@ -22,6 +22,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/juliushill42/titanu-harness/internal/littlebit"
 )
 
 const maxBody = 256 << 10
@@ -63,6 +65,7 @@ type App struct {
 	modelURL string
 	modelID  string
 	client   *http.Client
+	littlebitLayer *littlebit.Layer
 }
 
 func randomHex(n int) (string, error) {
@@ -123,6 +126,13 @@ func New(root, modelURL, modelID string) (*App, error) {
 		modelID = "local"
 	}
 	a := &App{Root: abs, dir: data, key: k, token: hex.EncodeToString(t), sessions: make(map[string]time.Time), modelID: modelID, client: &http.Client{Timeout: 15 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}}
+	if layerPath := os.Getenv("TITANU_LITTLEBIT_LAYER"); layerPath != "" {
+		layer, err := littlebit.LoadFile(layerPath)
+		if err != nil {
+			return nil, fmt.Errorf("load TITANU_LITTLEBIT_LAYER: %w", err)
+		}
+		a.littlebitLayer = layer
+	}
 	if modelURL != "" {
 		u, e := url.Parse(modelURL)
 		if e != nil {
@@ -797,6 +807,42 @@ func (a *App) Handler() http.Handler {
 			return
 		}
 		write(w, 200, map[string]any{"id": ev.ID, "response": reply})
+	})
+	mux.HandleFunc("GET /api/littlebit/status", func(w http.ResponseWriter, r *http.Request) {
+		if a.littlebitLayer == nil {
+			write(w, 200, map[string]any{"configured": false, "backend": "titanu-littlebit-layer-v1"})
+			return
+		}
+		meta := a.littlebitLayer.Metadata()
+		meta["configured"] = true
+		write(w, 200, meta)
+	})
+	mux.HandleFunc("POST /api/littlebit/apply", func(w http.ResponseWriter, r *http.Request) {
+		if a.littlebitLayer == nil {
+			write(w, 503, map[string]any{"error": "LITTLEBIT_LAYER_NOT_CONFIGURED"})
+			return
+		}
+		var q struct {
+			Input []float32 `json:"input"`
+		}
+		if err := decode(r, &q); err != nil {
+			write(w, 400, map[string]any{"error": err.Error()})
+			return
+		}
+		output, err := a.littlebitLayer.Apply(q.Input)
+		if err != nil {
+			write(w, 422, map[string]any{"error": err.Error()})
+			return
+		}
+		encoded, _ := json.Marshal(output)
+		a.mu.Lock()
+		ev, ledgerErr := a.record(Event{Kind: "littlebit", Tool: "littlebit.apply", Allowed: true, Decision: "EXECUTED", OutputHash: sum(encoded)})
+		a.mu.Unlock()
+		if ledgerErr != nil {
+			write(w, 500, map[string]any{"error": "LEDGER_WRITE_FAILED", "detail": ledgerErr.Error()})
+			return
+		}
+		write(w, 200, map[string]any{"id": ev.ID, "output": output, "backend": a.littlebitLayer.Metadata()})
 	})
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")

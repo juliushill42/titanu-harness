@@ -38,6 +38,7 @@ func Load(data []byte) (*Layer,error) {
  if e:=json.Unmarshal(data,&a);e!=nil{return nil,fmt.Errorf("decode artifact JSON: %w",e)}
  if a.SchemaVersion!=SchemaVersion{return nil,fmt.Errorf("unsupported schema_version %d",a.SchemaVersion)}
  if a.InputDim<1||a.OutputDim<1||a.Rank<1{return nil,errors.New("input_dim, output_dim and rank must be positive")}
+ if a.InputDim>1<<20||a.OutputDim>1<<20||a.Rank>1<<20||int64(a.InputDim)*int64(a.Rank)>1<<27||int64(a.OutputDim)*int64(a.Rank)>1<<27{return nil,errors.New("dimensions exceed the 128 Mi-element safety bound")}
  p,e:=decodePath(a.Primary,a.InputDim,a.OutputDim,a.Rank);if e!=nil{return nil,fmt.Errorf("primary path: %w",e)}
  l:=&Layer{Artifact:a,primary:p}
  if a.Residual!=nil { r,err:=decodePath(*a.Residual,a.InputDim,a.OutputDim,a.Rank);if err!=nil{return nil,fmt.Errorf("residual path: %w",err)};l.residual=&r }

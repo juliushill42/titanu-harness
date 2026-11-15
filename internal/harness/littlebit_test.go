@@ -1,6 +1,7 @@
 package harness
 
 import (
+	"bytes"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -45,7 +46,7 @@ func TestLittleBitAPIAndLedger(t *testing.T) {
 	}
 	status, body = request(t, client, "GET", srv.URL+"/api/events", token, nil)
 	expect(t, status, 200, body)
-	if !contains(body, `"kind":"littlebit"`) || !contains(body, `"tool":"littlebit.apply"`) {
+	if !bytes.Contains(body, []byte(`"kind":"littlebit"`)) || !bytes.Contains(body, []byte(`"tool":"littlebit.apply"`)) {
 		t.Fatalf("LittleBit execution evidence missing: %s", body)
 	}
 }

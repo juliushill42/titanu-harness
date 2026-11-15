@@ -32,6 +32,26 @@ TITANU_MODEL_ENDPOINT=http://127.0.0.1:8080/v1/chat/completions TITANU_MODEL_ID=
 
 No model, weights or cloud services are installed by Harness. Configure only a model process you actually run.
 
+## Harness LittleBit API
+
+Set `TITANU_LITTLEBIT_LAYER` to a TitanU-format layer artifact before starting the Harness:
+
+```bash
+TITANU_LITTLEBIT_LAYER="$HOME/models/layer.json" bash bootstrap.sh
+```
+
+The authenticated API exposes:
+- `GET /api/littlebit/status` — loaded layer metadata and storage accounting.
+- `POST /api/littlebit/apply` — apply the loaded factorized layer to a JSON float32 vector.
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8844/api/littlebit/status
+curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"input":[3,5]}' http://127.0.0.1:8844/api/littlebit/apply
+```
+
+Every successful layer application appends a signed event to the existing HMAC evidence ledger. This is a factorized-layer execution tool, not a full text-generation endpoint.
+
 ## API (all except health and login require authentication)
 
 `GET /health`, `POST /api/login`, `POST /api/logout`, `GET /api/state`, `POST /api/evaluate`, `POST /api/execute`, `GET /api/events`, `GET /api/verify`, `GET /api/replay/{id}`, `POST /api/feedback`, `GET /api/export/sft`, `GET /api/export/preferences`, `POST /api/infer`.
@@ -69,4 +89,17 @@ curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
 
 ## Version
 
-Implementation: local runtime version **0.2.0**. Historical record: September 25, 2026 version 0.1.0, cited separately.
+Implementation: local runtime version **0.2.0**. Historical record: September 25, 2026 version 0.1.0.
+
+## LittleBit edge backend
+
+The new `internal/littlebit` package evaluates factorized binary linear layers using packed sign matrices and row/column/latent scales, with optional residual compensation. It does not materialize a dense weight matrix.
+
+```bash
+bin/titanu-littlebit inspect -artifact testdata/littlebit-layer.json
+bin/titanu-littlebit apply -artifact testdata/littlebit-layer.json -input 3,5
+```
+
+The bootstrap builds this CLI and executes a deterministic runtime proof. See `docs/LITTLEBIT_EDGE.md` for the artifact contract and mathematical definition.
+
+**Research/license boundary:** Samsung's reference LittleBit repository is CC BY-NC 4.0. TitanU does not vendor or copy its implementation. This backend independently implements the published factorized inference equation. It is a layer execution backend, not a full Transformer/tokenizer or direct loader for Samsung training checkpoints. A compatible checkpoint exporter and complete model runtime are still required for text generation.

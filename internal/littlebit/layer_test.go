@@ -1,0 +1,8 @@
+package littlebit
+import("encoding/base64";"encoding/json";"math";"testing")
+func pack(v []bool)string{b:=make([]byte,(len(v)+7)/8);for i,x:=range v{if x{b[i>>3]|=1<<uint(i&7)}};return base64.StdEncoding.EncodeToString(b)}
+func fixture(t *testing.T)[]byte{t.Helper();a:=Artifact{SchemaVersion:1,InputDim:2,OutputDim:2,Rank:1,Primary:Path{USign:pack([]bool{true,false}),VSign:pack([]bool{true,false}),H:[]float32{1,1},G:[]float32{1,1},L:[]float32{1}}};b,e:=json.Marshal(a);if e!=nil{t.Fatal(e)};return b}
+func TestApplyFactorizedLayer(t *testing.T){l,e:=Load(fixture(t));if e!=nil{t.Fatal(e)};got,e:=l.Apply([]float32{3,5});if e!=nil{t.Fatal(e)};want:=[]float32{-2,2};for i:=range want{if math.Abs(float64(got[i]-want[i]))>1e-6{t.Fatalf("got %v want %v",got,want)}}}
+func TestRejectMalformedArtifactAndInput(t *testing.T){if _,e:=Load([]byte(`{"schema_version":99}`));e==nil{t.Fatal("expected schema rejection")};l,e:=Load(fixture(t));if e!=nil{t.Fatal(e)};if _,e=l.Apply([]float32{1});e==nil{t.Fatal("expected dimension rejection")};if _,e=l.Apply([]float32{float32(math.NaN()),1});e==nil{t.Fatal("expected NaN rejection")}}
+func TestResidualPathAddsCorrection(t *testing.T){var a Artifact;if e:=json.Unmarshal(fixture(t),&a);e!=nil{t.Fatal(e)};r:=a.Primary;r.H=[]float32{2,2};a.Residual=&r;b,_:=json.Marshal(a);l,e:=Load(b);if e!=nil{t.Fatal(e)};got,e:=l.Apply([]float32{3,5});if e!=nil{t.Fatal(e)};if got[0]!=-6||got[1]!=6{t.Fatalf("residual not accumulated: %v",got)}}
+func TestMetadataReportsStorage(t *testing.T){l,e:=Load(fixture(t));if e!=nil{t.Fatal(e)};if l.Metadata()["format"]!="titanu-littlebit-layer-v1"||l.PackedBytes()==0{t.Fatalf("bad metadata: %#v",l.Metadata())}}

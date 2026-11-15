@@ -61,7 +61,7 @@ All writes require `Content-Type: application/json`. Browser requests are constr
 ```bash
 TOKEN=$(od -An -tx1 -v data/control.token | tr -d ' \n')
 curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8844/api/verify
-curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \\
+curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"tool":"write","path":"notes/hello.txt","content":"Hello"}' \
   http://127.0.0.1:8844/api/execute
 ```
